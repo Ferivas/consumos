@@ -9,11 +9,14 @@ import datetime
 namefile='Consumos_Manta.csv'
 archivo=open(namefile,"a")
 
-keys=['41583','41584','41585','41586','41587','41588','41589','38280']
+keys=['41583','41584','41585','41586','41587','41588','41589','38467']
 cadena=''
 formato1="%Y-%m-%dT%H:%M:%S"
-campo='1'
+tbl_campo=['1','1','1','1','1','1','1','8']
+ptr=0
 for canal in keys:
+    campo=tbl_campo[ptr]
+    ptr=ptr+1
     consumo=ts.getlastfield(canal,campo)
 #    print(consumo)
     if consumo[1]!='':
