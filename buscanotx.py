@@ -14,6 +14,11 @@ import datetime
 import codecs
 formato1="%Y-%m-%dT%H:%M:%SZ"
 
+ARCHIVO="Tbl_IBT_DAA_Manta_PRODUCCION.csv"
+with codecs.open(ARCHIVO, "r",encoding='utf-8', errors='ignore') as listaib:
+    listado=listaib.readlines()
+    listado=listado[1:]
+
 # Leer los ultimos R resultados de un canal
 def getriot(canal,R)        :
     url='https://api.thingspeak.com/channels/'+canal+'/feeds.json?results='+str(R)
@@ -56,67 +61,75 @@ def getlastfield(canal,campo):
     else:
         data=['','','','']
         return data
-print("BUSCA ERRORES SALDO")
-with codecs.open("TManta2018.csv", "r",encoding='utf-8', errors='ignore') as listaib:
-    #listaib=open("LISTA_DITEC.csv","r")
-    listado=listaib.readlines()
-    print('LISTADO leido')
-    x=datetime.datetime.now()    
-    namefile="ERRSALDO"+"_"+str(x.year)+"_"+str(x.month)+"_"+str(x.day)+"_"+str(x.hour)+str(x.minute)+str(x.second)+".csv"        
-    numr=30
-    archivo=open(namefile,"a")
-    cntr=0
-    indice=-2
+
+print('LISTADO leido')
+x=datetime.datetime.now()    
+namefile="ERRSALDO"+"_"+str(x.year)+"_"+str(x.month)+"_"+str(x.day)+"_"+str(x.hour)+str(x.minute)+str(x.second)+".csv"        
+numr=30
+archivo=open(namefile,"a")
+cntr=0
+indice=0
+
+for linea in listado:
+    param=linea.split(',')
+    nombre=param[6]
+    idusr=nombre
+    inis=idusr.find("(")
+    fins=idusr.find(")")
+    if inis >=0 and inis<=fins:
+        #print(inis)
+        #print(fins)
+        llave=idusr[(inis+1):fins]
+        if llave=="":
+            llave="Sin ID"
+    else:
+        llave="No ID "  
+    indice=indice+1
+    canal=param[3]
+    print(indice,llave,canal)
+   
+    feeds=getriot(canal,numr)   # feeds es una lista con cada elemento como una entrada         
     
-    for linea in listado:
-        param=linea.split(',')
-        nombre=param[1]
-        llave=param[2]
-        indice=indice+1
-        print(indice,llave)
-        canal=param[4]
-        feeds=getriot(canal,numr)   # feeds es una lista con cada elemento como una entrada         
-        
-        data=getlastfield(canal,1)
-        #print(data)
-        if data[0]!="":
-            #print(data[0])
-            fechad=datetime.datetime.strptime(data[0],formato1)
-            dif=x-fechad
-            adif=abs(dif.days)
-            if adif<2:
-                try:
-                    lfeeds=len(feeds)
-                except:
-                    lfeeds=0
-                if lfeeds>0:
-                    cadena=""
-                    for entrada in feeds:
-                #                    print(entrada)
-                        if entrada['field1']!=None:
-                            fecha=entrada['created_at']
-                            f1=entrada['field1']
-                            if f1!="0":
-                                f1="C"
-                            cadena=cadena+f1
-                        else:
-                            f1="N"
-                            #print(fecha,f1)
-                    #print(cadena)
-                    errsaldo=cadena.count("000")
-                    if errsaldo>0:
-                        cntr=cntr+1
-                        #print(errsaldo)
-                        msg=str(cntr)+","+llave+","+nombre+","+canal+","+str(errsaldo)+","+fecha+'\r'
-                        print(msg)
-                        archivo.write(msg)
-                
-            else:
-                print("NO tx antiguo, ",fechad)
+    data=getlastfield(canal,1)
+    #print(data)
+    if data[0]!="":
+        #print(data[0])
+        fechad=datetime.datetime.strptime(data[0],formato1)
+        dif=x-fechad
+        adif=abs(dif.days)
+        if adif<2:
+            try:
+                lfeeds=len(feeds)
+            except:
+                lfeeds=0
+            if lfeeds>0:
+                cadena=""
+                for entrada in feeds:
+            #                    print(entrada)
+                    if entrada['field1']!=None:
+                        fecha=entrada['created_at']
+                        f1=entrada['field1']
+                        if f1!="0":
+                            f1="C"
+                        cadena=cadena+f1
+                    else:
+                        f1="N"
+                        #print(fecha,f1)
+                #print(cadena)
+                errsaldo=cadena.count("000")
+                if errsaldo>0:
+                    cntr=cntr+1
+                    #print(errsaldo)
+                    msg=str(cntr)+","+llave+","+nombre+","+canal+","+str(errsaldo)+","+fecha+'\r'
+                    print(msg)
+                    archivo.write(msg)
             
         else:
-            print("Err ultima fecha")
+            print("NO tx antiguo, ",fechad)
+        
+    else:
+        print("Err ultima fecha")
 
 
-            
-    archivo.close()
+        
+archivo.close()
